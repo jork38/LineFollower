@@ -1,4 +1,6 @@
-
+#include <EEPROM.h>
+#include "EEPROMAnything.h"
+#include "SerialCommand.h"
 
 void setup() {
   // put your setup code here, to run once:
