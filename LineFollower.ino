@@ -12,12 +12,13 @@ SerialCommand sCmd(SerialPort);   // The demo SerialCommand object
 struct param_t
 {
   bool start;
-  int speed = map(speed, 0, 100, 0, 255);
+  int speed;
   unsigned long cycleTime;
   int white[6];
   int black[6];
   double kp, ki, kd;
   double outMin, outMax;
+  int maxspeed;
 } params;
 
 
@@ -66,6 +67,7 @@ void setup()
   sCmd.addCommand("debug", onDebug);
   sCmd.addCommand("reset", onReset);
   sCmd.addCommand("calibrate", onCalibrate);
+  sCmd.addCommand("pwm", onPwm);
   sCmd.setDefaultHandler(onUnknownCommand);
 
   EEPROM_readAnything(0, params);
@@ -189,7 +191,11 @@ void onSet()
   {
     int x = atoi(value);
     if (x > 100) SerialPort.println("Value for speed is to high...");
-    else params.speed = x;
+    else
+    {
+        x = map(params.speed, 0, 100, 0, 255);
+        params.speed = x;
+    }
   }
   else if (strcmp(parameter, "kp") == 0) params.kp = atof(value);
   else if (strcmp(parameter, "ki") == 0)
@@ -240,9 +246,11 @@ void onStop()
 void onDebug()
 {
   //parameters
+  int x = params.speed;
+  x = map(x, 0, 255, 0, 100);
   SerialPort.println(" ");
   SerialPort.print("speed: ");
-  SerialPort.println(params.speed);
+  SerialPort.println(x);
   SerialPort.println("kp: ");
   SerialPort.print(params.kp);
   SerialPort.print(" ");
@@ -376,3 +384,25 @@ void onInterrupt()
   params.start = not params.start;
 }
 
+void onPwm()
+{
+    //Control the motors.
+    char* valueA = sCmd.next();
+    char* valueB = sCmd.next();
+
+    if (params.start == true)
+    {
+        SerialPort.println("You must put the linefollower in stop before you can control the motors");
+
+    } else if (params.start == false)
+    {
+        pwmControlA = atoi(valueA);
+        pwmControlA = map(pwmControlA, 0, 100, 0, 255);
+        pwmControlB = atoi(valueB);
+        pwmControlB = map(pwmControlB, 0, 100, 0, 255);
+
+        analogWrite(pwmControlA, pwmA);
+        analogWrite(pwmControlB, pwmB);
+    }
+
+}
